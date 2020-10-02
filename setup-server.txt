@@ -1,0 +1,78 @@
+Setup Wordpress Server(LEMP)
+
+#=================== Nginx
+
+sudo apt update 
+sudo apt install nginx
+sudo ufw allow 'Nginx HTTP'
+sudo ufw status
+#Get IP : ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+
+curl -4 icanhazip.com
+
+
+#==================== Mysql
+sudo apt install mysql-server
+sudo mysql_secure_installation
+
+sudo mysql || mysql -u root -p
+Mysql > SELECT user,authentication_string,plugin,host FROM mysql.user;
+Mysql > ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ‘password’;
+Mysql > FLUSH PRIVILEGES;
+Mysql > SELECT user,authentication_string,plugin,host FROM mysql.user;
+Mysql > exit
+
+=============
+
+CREATE DATABASE wordpress DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+GRANT ALL ON wordpress.* TO 'wordpressuser'@'localhost' IDENTIFIED BY 'password';
+Mysql > FLUSH PRIVILEGES;
+
+
+#=================== PHP
+sudo add-apt-repository universe
+sudo apt install php-fpm php-mysql
+
+sudo apt update 
+sudo apt install php-curl php-gd php-intl php-mbstring php-soap php-xml php-xmlrpc php-zip
+sudo systemctl restart php7.2-fpm
+sudo nano /etc/nginx/sites-available/wordpress
+
+========== NGinx ===========
+server {
+        listen 80;
+        root /var/www/html;
+        index index.php index.html index.htm index.nginx-debian.html;
+        server_name example.com;
+
+        location / {
+                try_files $uri $uri/ /index.php$is_args$args;
+        }
+
+        location = /favicon.ico { log_not_found off; access_log off; }
+   	location = /robots.txt { log_not_found off; access_log off; allow all; }
+   	location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+       			 expires max;
+        			log_not_found off;
+    	}
+
+        location ~ /\.ht {
+                deny all;
+        }
+}
+========== NGinx ===========
+sudo nginx -t
+sudo systemctl reload nginx
+
+
+
+#Wordpress
+cd /tmp
+curl -LO https://wordpress.org/latest.tar.gz
+tar xzvf latest.tar.gz
+cp /tmp/wordpress/wp-config-sample.php /tmp/wordpress/wp-config.php
+sudo cp -a /tmp/wordpress/. /var/www/wordpress
+sudo chown -R www-data:www-data /var/www/wordpress
+curl -s https://api.wordpress.org/secret-key/1.1/salt/
+sudo nano /var/www/wordpress/wp-config.php
+
